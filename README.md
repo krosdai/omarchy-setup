@@ -4,6 +4,11 @@ An Omarchy shell plugin that installs **Fcitx5 + Rime-ice (雾凇拼音)** with 
 simplified Chinese by default, and **nine candidates per page**. It uses Omarchy's
 existing Fcitx5 service and leaves Caps Lock compose sequences unchanged.
 
+The repository also includes an independent, opt-in
+[automatic time-zone setup](timezone/README.md) using Wi-Fi positioning and public-IP
+fallback. Run `/usr/bin/python setup_timezone.py` from the checkout to review and
+enable it; the Chinese-input plugin never enables it automatically.
+
 ## Install
 
 Requires an up-to-date Arch-based Omarchy desktop with the `omarchy plugin` commands,
