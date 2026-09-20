@@ -133,8 +133,11 @@ Back up your `hypr/hyprland.lua`, then add this line **once at the end**, after
 Omarchy's defaults and your other overrides:
 
 ```lua
-require("hypr.scrolling")
+dofile((os.getenv("XDG_CONFIG_HOME") or os.getenv("HOME") .. "/.config") .. "/hypr/scrolling.lua")
 ```
+
+The explicit path matches the copy destination, including custom `XDG_CONFIG_HOME`
+locations, without depending on Omarchy's Lua module search path.
 
 Apply and verify:
 
@@ -146,7 +149,7 @@ hyprctl getoption general:layout
 
 The error list should be empty and the layout should read `scrolling`. Existing
 per-workspace layout choices still take precedence; the preset changes the default
-for workspaces without an override. To undo, remove the `require` line and reload;
+for workspaces without an override. To undo, remove the `dofile` line and reload;
 your previous default takes effect again. The copied preset remains independent of
 plugin updates or removal.
 
