@@ -1,0 +1,14 @@
+[Unit]
+Description=Automatically update time zone from GeoClue location
+Wants=network-online.target
+After=network-online.target geoclue.service geoclue-timezone-agent.service
+Requires=geoclue.service geoclue-timezone-agent.service
+PartOf=geoclue.service
+
+[Service]
+ExecStart=/usr/bin/automatic-timezoned
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

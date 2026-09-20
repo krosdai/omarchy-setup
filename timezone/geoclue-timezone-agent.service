@@ -1,0 +1,10 @@
+[Unit]
+Description=GeoClue agent for the automatic time zone service
+Requires=geoclue.service
+After=geoclue.service
+PartOf=automatic-timezoned.service
+
+[Service]
+ExecStart=/usr/lib/geoclue-2.0/demos/agent
+Restart=on-failure
+RestartSec=5
