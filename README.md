@@ -153,6 +153,45 @@ for workspaces without an override. To undo, remove the `dofile` line and reload
 your previous default takes effect again. The copied preset remains independent of
 plugin updates or removal.
 
+## Optional traditional mouse scrolling
+
+`presets/mouse-scrolling.lua` explicitly disables natural (inverse) mouse scrolling:
+rolling the wheel toward you scrolls down. It leaves touchpad scrolling and all other
+input settings unchanged. This is independent of the scrolling window layout above
+and is **not applied automatically** by the Chinese-input plugin.
+
+This preset requires Lua-configured Hyprland, not a legacy `hyprland.conf`. From this
+repository's checkout (or the installed plugin directory), run:
+
+```sh
+mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
+cp -i presets/mouse-scrolling.lua "${XDG_CONFIG_HOME:-$HOME/.config}/hypr/mouse-scrolling.lua"
+```
+
+Back up your `hypr/hyprland.lua`, then add this line **once at the end**, after
+Omarchy's defaults and your other overrides:
+
+```lua
+dofile((os.getenv("XDG_CONFIG_HOME") or os.getenv("HOME") .. "/.config") .. "/hypr/mouse-scrolling.lua")
+```
+
+Apply and verify:
+
+```sh
+hyprctl reload
+hyprctl configerrors
+hyprctl getoption input:natural_scroll
+hyprctl getoption input:touchpad:natural_scroll
+```
+
+The error list should be empty, mouse `natural_scroll` should be `false`, and the
+touchpad value should be unchanged. Explicit per-device scrolling overrides still
+take precedence. If traditional scrolling was already the default, the direction
+will feel unchanged; the preset makes that preference explicit.
+
+To undo, remove the `dofile` line and reload; your previous mouse default takes effect
+again. The copied preset remains independent of plugin updates or removal.
+
 ## Development
 
 ```sh
