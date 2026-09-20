@@ -101,6 +101,8 @@ def apply(root):
     for name, path in destinations.items():
         if any(parent.is_symlink() for parent in (path, *path.parents)):
             raise ValueError(f"Symlinked configuration requires manual setup: {path}")
+        if path.exists() and not path.is_file():
+            raise ValueError(f"Non-regular configuration path requires manual setup: {path}")
         if path.exists() and path.read_bytes() != (ASSETS / name).read_bytes():
             raise ValueError(f"Conflicting configuration; back it up and reconcile it: {path}")
     legacy = root / "etc/geoclue/conf.d/90-no-ip-location.conf"
@@ -199,7 +201,10 @@ def apply(root):
                 ) from error
             raise
     print("Automatic time zone service enabled. Location acquisition may take time.")
-    run("timedatectl", "status")
+    try:
+        run("timedatectl", "status")
+    except (OSError, subprocess.CalledProcessError) as error:
+        print(f"Setup completed, but time status could not be displayed: {error}")
     return backup
 
 

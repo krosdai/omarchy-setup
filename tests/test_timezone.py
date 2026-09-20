@@ -127,6 +127,43 @@ class TimezoneTest(unittest.TestCase):
         self.mock_run.assert_not_called()
         self.assertTrue(path.is_symlink())
 
+    def test_non_regular_destination_is_refused_before_reading(self):
+        path = self.root / timezone.FILES[timezone.SERVICE]
+        path.mkdir(parents=True)
+        for fifo in (False, True):
+            with self.subTest(fifo=fifo):
+                if fifo:
+                    path.rmdir()
+                    timezone.os.mkfifo(path)
+                with (
+                    patch.object(timezone.Path, "read_bytes") as read,
+                    self.assertRaisesRegex(ValueError, "Non-regular"),
+                ):
+                    timezone.apply(self.root)
+                read.assert_not_called()
+                self.mock_run.assert_not_called()
+                self.assertTrue(path.exists())
+
+    def test_status_display_failure_does_not_fail_completed_setup(self):
+        for error in (OSError("unavailable"), subprocess.CalledProcessError(1, ["timedatectl"])):
+            with self.subTest(error=type(error).__name__):
+                self.commands.clear()
+
+                def fail(*args, error=error, **kwargs):
+                    if args == ("timedatectl", "status"):
+                        raise error
+                    return self.command(*args, **kwargs)
+
+                self.mock_run.side_effect = fail
+                with patch("builtins.print") as output:
+                    backup = timezone.apply(self.root)
+                self.assertTrue((backup / "previous.json").is_file())
+                self.assertTrue((self.root / timezone.FILES[timezone.SERVICE]).is_file())
+                self.assertFalse(any(args[:2] == ("systemctl", "stop") for args in self.commands))
+                output.assert_called_with(
+                    f"Setup completed, but time status could not be displayed: {error}"
+                )
+
     def test_failure_before_activation_removes_only_new_files(self):
         existing = self.root / timezone.FILES["90-automatic-timezoned.conf"]
         existing.parent.mkdir(parents=True)
