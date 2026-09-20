@@ -246,5 +246,7 @@ def main():
 if __name__ == "__main__":
     try:
         main()
+    except KeyboardInterrupt:
+        raise SystemExit("Automatic time zone setup cancelled.") from None
     except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as error:
         raise SystemExit(f"Automatic time zone setup failed: {error}") from error

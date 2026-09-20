@@ -1,6 +1,7 @@
 import configparser
 import copy
 import json
+import runpy
 import signal
 import subprocess
 import sys
@@ -316,6 +317,26 @@ class TimezoneTest(unittest.TestCase):
                     ),
                 ],
             )
+
+    def test_unprivileged_cancellation_exits_with_concise_message(self):
+        for at_prompt in (True, False):
+            with (
+                self.subTest(at_prompt=at_prompt),
+                patch("sys.argv", ["setup_timezone.py"]),
+                patch.object(timezone.os, "geteuid", return_value=1000),
+                patch(
+                    "builtins.input",
+                    side_effect=KeyboardInterrupt if at_prompt else None,
+                    return_value="y",
+                ),
+                patch("install.run", side_effect=KeyboardInterrupt) as run,
+                self.assertRaisesRegex(SystemExit, "^Automatic time zone setup cancelled\\.$"),
+            ):
+                runpy.run_path(timezone.__file__, run_name="__main__")
+            if at_prompt:
+                run.assert_not_called()
+            else:
+                run.assert_called_once_with("omarchy-pkg-add", "geoclue")
 
     def test_lock_contention_exits_without_configuration(self):
         with (
