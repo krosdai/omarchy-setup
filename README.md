@@ -114,6 +114,42 @@ Reapplying the preset creates another backup and preserves personal data. An exi
 Git checkout in the Rime directory is saved in the backup, not carried into the managed
 runtime directory; do not use `git pull` there after adopting this plugin.
 
+## Optional Hyprland scrolling layout
+
+`presets/scrolling.lua` makes Hyprland's built-in scrolling layout the default.
+It is independent of Chinese-input setup and is **not applied automatically** when
+the plugin is enabled. It requires a Lua-configured Hyprland with scrolling support
+(tested on Omarchy with Hyprland 0.56.2); it is not a legacy `hyprland.conf` snippet.
+It leaves column widths, keybindings, appearance, and explicit workspace layouts alone.
+
+From this repository's checkout (or the installed plugin directory), run:
+
+```sh
+mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
+cp -i presets/scrolling.lua "${XDG_CONFIG_HOME:-$HOME/.config}/hypr/scrolling.lua"
+```
+
+Back up your `hypr/hyprland.lua`, then add this line **once at the end**, after
+Omarchy's defaults and your other overrides:
+
+```lua
+require("hypr.scrolling")
+```
+
+Apply and verify:
+
+```sh
+hyprctl reload
+hyprctl configerrors
+hyprctl getoption general:layout
+```
+
+The error list should be empty and the layout should read `scrolling`. Existing
+per-workspace layout choices still take precedence; the preset changes the default
+for workspaces without an override. To undo, remove the `require` line and reload;
+your previous default takes effect again. The copied preset remains independent of
+plugin updates or removal.
+
 ## Development
 
 ```sh
