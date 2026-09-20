@@ -1,188 +1,218 @@
-# Monorepo Scaffold
+# Omarchy Chinese Input
 
-A minimal bootstrap scaffold for TypeScript + Python + Rust monorepos.
+An Omarchy shell plugin that installs **Fcitx5 + Rime-ice (雾凇拼音)** with full Pinyin,
+simplified Chinese by default, and **nine candidates per page**. It uses Omarchy's
+existing Fcitx5 service and leaves Caps Lock compose sequences unchanged.
 
-This repository is intentionally small. It provides the shared project hygiene that most
-repositories need before application code exists: tool and package manager pinning, strict
-TypeScript defaults, a modern Python toolchain (uv + Ruff), a Rust toolchain (Cargo +
-rustfmt + Clippy), formatting, linting, staged-file checks, and CI.
+The repository also includes an independent, opt-in
+[automatic time-zone setup](timezone/README.md) using Wi-Fi positioning and public-IP
+fallback. Run `/usr/bin/python setup_timezone.py` from the checkout to review and
+enable it; the Chinese-input plugin never enables it automatically.
 
-## What Is Included
+## Install
 
-Shared:
+Requires an up-to-date Arch-based Omarchy desktop with the `omarchy plugin` commands,
+Python 3, and an active `omarchy-fcitx5.service`. Run as your desktop user, not root.
+Internet access to the Arch package mirrors and GitHub is required.
 
-- mise config for unified tool management (Node.js, pnpm, uv, AutoCorrect; Rust is opt-in)
-- Prettier formatting for docs and config file types (Markdown, JSON, YAML, HTML,
-  CSS, Vue, GraphQL, and more — see the globs in `package.json`)
-- AutoCorrect CJK copywriting cleanup
-- Husky pre-commit and pre-push hooks with lint-staged
-- GitHub Actions lint and AI code-review workflows
-- Basic `.env.example` and `.gitignore` files
-- `AGENTS.md` for AI coding agents (`CLAUDE.md` references it)
+Once this plugin has been published to the repository's default branch:
 
-TypeScript:
-
-- pnpm workspace over `apps/*` and `packages/*`
-- Strict `tsconfig.json` defaults
-- [Oxlint](https://oxc.rs/docs/guide/usage/linter) with type-aware rules
-  (`oxlint-tsgolint`) — one root `.oxlintrc.json` lints the whole monorepo
-- [Oxfmt](https://oxc.rs/docs/guide/usage/formatter) formatting for the JS/TS family
-  (Prettier-compatible output, configured in `.oxfmtrc.jsonc`)
-
-Python:
-
-- uv workspace under `apps/` and `packages/` with a single shared lockfile
-- Ruff linter + formatter configured in the root `pyproject.toml`
-- Python version pinned in `.python-version` (uv installs it automatically)
-
-Rust:
-
-- Cargo workspace under `apps/` and `packages/` with a single shared `Cargo.lock`
-- [rustfmt](https://rust-lang.github.io/rustfmt/) formatting (`rustfmt.toml`, edition 2024)
-- [Clippy](https://doc.rust-lang.org/clippy/) linting, run with `-D warnings` so any lint
-  fails `pnpm run lint`
-- Toolchain opt-in via mise: uncomment `rust` in `mise.toml` when you add your first crate
-  (it pins `rust = "1.93"` with the rustfmt + clippy components). Until then the Rust
-  lint/format steps are no-ops, so repos without Rust don't install the toolchain.
-
-## What Is Not Included
-
-- No app framework
-- No build tool
-- No test runner
-- No runtime entrypoint
-- No generated source tree
-
-Add those only when a real project needs them.
-
-## Layout
-
-```
-apps/        # deployable applications (TypeScript, Python, or Rust)
-packages/    # shared libraries (TypeScript, Python, or Rust)
+```sh
+omarchy plugin add https://github.com/krosdai/omarchy-setup.git --enable
 ```
 
-TypeScript, Python, and Rust members share the same two directories, and a member can even
-belong to more than one ecosystem. pnpm discovers members through the `apps/*` / `packages/*`
-globs in `pnpm-workspace.yaml`: a directory joins by having a `package.json`. Python and Rust
-members are instead listed explicitly — Python in `[tool.uv.workspace]` in the root
-`pyproject.toml`, Rust in `[workspace] members` in the root `Cargo.toml`. Both uv and Cargo
-require every member-glob match to be a project of their own kind, so a glob like `apps/*`
-would break the moment a member of another ecosystem appears; explicit lists avoid that.
-`uv init` and `cargo new` maintain their respective member lists for you.
+Omarchy asks whether you trust the plugin. On first enable, the plugin opens an
+installation terminal. Review the changes and answer `y`; enter your sudo password
+if the package installer asks for it. No application build or development tools are
+needed on the recipient's machine.
 
-## Quick Start
+Adding a plugin does not run an install hook: Omarchy has no such hook. This plugin's
+headless QML service opens the installer when enabled. After a successful installation,
+it does nothing on subsequent logins or hot reloads. Cancelling or failing leaves setup
+available on the next enable/login, or you can run it manually:
 
-With [mise](https://mise.jdx.dev) (recommended — installs Node.js, pnpm, uv, and AutoCorrect):
+```sh
+/usr/bin/python ~/.config/omarchy/plugins/krosdai.chinese-input/install.py
+```
+
+## What gets configured
+
+- Packages: `fcitx5-rime`, `fcitx5-configtool`, `python-yaml`, and `git` through
+  `omarchy-pkg-add`; `librime` is installed as a dependency.
+- Rime-ice runtime assets from the official repository, pinned to the revision in
+  `install.py`. It does not run upstream installation scripts.
+- The Rime scheme menu selects `rime_ice` (full Pinyin). Other installed schemes stay
+  on disk. The upstream scheme defaults to simplified Chinese; existing user choices
+  such as traditional-character mode are not forcibly reset.
+- `menu/page_size: 9` in both `default.custom.yaml` and `rime_ice.custom.yaml`.
+- Rime is added once to the first group in Fcitx5's group order and becomes that group's
+  default non-keyboard input method. Existing keyboard layouts, other input methods,
+  groups, and global shortcuts are preserved. A fresh profile gets US English + Rime.
+
+Fcitx5 stops during deployment to prevent concurrent writes to your personal dictionary.
+Finish any pending composition before approving installation. Source downloads happen
+before the service stops.
+
+## Use
+
+| Key                         | Action                                                              |
+| --------------------------- | ------------------------------------------------------------------- |
+| `Ctrl+Space`                | Switch between keyboard input and Rime, with stock Fcitx5 shortcuts |
+| `Space`                     | Select the first candidate                                          |
+| `1`–`9`                     | Select a numbered candidate                                         |
+| `F4`                        | Open Rime options, including simplified/traditional Chinese         |
+| Caps Lock compose sequences | Keep working through Omarchy's existing configuration               |
+
+Run `fcitx5-configtool` for input-method settings. Custom global shortcuts are not
+replaced; use your existing shortcut if it differs from `Ctrl+Space`.
+
+## Existing data, backups, and removal
+
+The installer keeps personal dictionaries (`*.userdb`), sync data, existing
+`custom_phrase.txt`, cold-word suppression lists (`drop_words.lua`, `hide_words.lua`,
+and `reduce_freq_words.lua`), and unrelated YAML patch settings. It replaces the upstream
+runtime assets, the scheme menu, and candidate-page size. Direct edits to upstream
+dictionaries or Lua files should be moved to custom patches before installation.
+YAML/profile serialization can change formatting and remove comments; original files
+remain in the backup. Symlinked Rime data or profiles are refused rather than followed.
+
+After Fcitx5 stops and flushes its configuration, the installer backs up the Rime directory
+and profile. Deployment failure or cancellation with Ctrl+C, SIGHUP, or SIGTERM stops the
+deployment child before restoring configuration and restarting Fcitx5. Repeated cancellation
+signals do not interrupt recovery. SIGKILL and power loss cannot be handled this way.
+
+If recovery itself fails, the installer keeps the backup and working directory, reports
+both errors and their paths, and requires manual recovery. In particular, it will not replace
+potentially live data if it cannot stop Fcitx5. System packages installed before a failure
+remain installed; they are not rolled back.
+
+Default locations (standard `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, and `XDG_STATE_HOME`
+overrides are honored):
+
+```text
+~/.config/fcitx5/profile
+~/.local/share/fcitx5/rime/
+~/.local/state/omarchy-chinese-input/installed.json
+~/.local/state/omarchy-chinese-input/backup-*/
+```
+
+`installed.json` records the source revision and latest successful backup location.
+To restore manually, stop `omarchy-fcitx5.service`, move the current Rime directory and
+profile aside, copy the saved `rime/` and `profile` back when present, and start the
+service. An absent backup item means it did not exist before installation. Keep newer
+personal dictionary data if you want to retain learning since the backup.
+
+```sh
+omarchy plugin remove krosdai.chinese-input
+```
+
+Removing or disabling the plugin does **not** uninstall packages, remove Rime, or erase
+your dictionary. It only removes/disables the setup launcher. The completion marker also
+remains; after re-adding the plugin, run the installer manually to reapply the preset.
+
+## Updates
+
+There are **no automatic dictionary updates**. `omarchy plugin update` updates this
+plugin, not the installed Rime-ice data. A maintainer can change the pinned revision
+after testing it; users then update the plugin and run its installer manually.
+Reapplying the preset creates another backup and preserves personal data. An existing
+Git checkout in the Rime directory is saved in the backup, not carried into the managed
+runtime directory; do not use `git pull` there after adopting this plugin.
+
+## Optional Hyprland scrolling layout
+
+`presets/scrolling.lua` makes Hyprland's built-in scrolling layout the default.
+It is independent of Chinese-input setup and is **not applied automatically** when
+the plugin is enabled. It requires a Lua-configured Hyprland with scrolling support
+(tested on Omarchy with Hyprland 0.56.2); it is not a legacy `hyprland.conf` snippet.
+It leaves column widths, keybindings, appearance, and explicit workspace layouts alone.
+
+From this repository's checkout (or the installed plugin directory), run:
+
+```sh
+mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
+cp -i presets/scrolling.lua "${XDG_CONFIG_HOME:-$HOME/.config}/hypr/scrolling.lua"
+```
+
+Back up your `hypr/hyprland.lua`, then add this line **once at the end**, after
+Omarchy's defaults and your other overrides:
+
+```lua
+dofile((os.getenv("XDG_CONFIG_HOME") or os.getenv("HOME") .. "/.config") .. "/hypr/scrolling.lua")
+```
+
+The explicit path matches the copy destination, including custom `XDG_CONFIG_HOME`
+locations, without depending on Omarchy's Lua module search path.
+
+Apply and verify:
+
+```sh
+hyprctl reload
+hyprctl configerrors
+hyprctl getoption general:layout
+```
+
+The error list should be empty and the layout should read `scrolling`. Existing
+per-workspace layout choices still take precedence; the preset changes the default
+for workspaces without an override. To undo, remove the `dofile` line and reload;
+your previous default takes effect again. The copied preset remains independent of
+plugin updates or removal.
+
+## Optional traditional mouse scrolling
+
+`presets/mouse-scrolling.lua` explicitly disables natural (inverse) mouse scrolling:
+rolling the wheel toward you scrolls down. It leaves touchpad scrolling and all other
+input settings unchanged. This is independent of the scrolling window layout above
+and is **not applied automatically** by the Chinese-input plugin.
+
+This preset requires Lua-configured Hyprland, not a legacy `hyprland.conf`. From this
+repository's checkout (or the installed plugin directory), run:
+
+```sh
+mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
+cp -i presets/mouse-scrolling.lua "${XDG_CONFIG_HOME:-$HOME/.config}/hypr/mouse-scrolling.lua"
+```
+
+Back up your `hypr/hyprland.lua`, then add this line **once at the end**, after
+Omarchy's defaults and your other overrides:
+
+```lua
+dofile((os.getenv("XDG_CONFIG_HOME") or os.getenv("HOME") .. "/.config") .. "/hypr/mouse-scrolling.lua")
+```
+
+Apply and verify:
+
+```sh
+hyprctl reload
+hyprctl configerrors
+hyprctl getoption input:natural_scroll
+hyprctl getoption input:touchpad:natural_scroll
+```
+
+The error list should be empty, mouse `natural_scroll` should be `false`, and the
+touchpad value should be unchanged. Explicit per-device scrolling overrides still
+take precedence. If traditional scrolling was already the default, the direction
+will feel unchanged; the preset makes that preference explicit.
+
+To undo, remove the `dofile` line and reload; your previous mouse default takes effect
+again. The copied preset remains independent of plugin updates or removal.
+
+## Development
 
 ```sh
 mise run setup
-```
-
-[Activate mise](https://mise.jdx.dev/getting-started.html) in your shell so the managed
-tools are on PATH. AutoCorrect is managed through mise, and package scripts call
-`mise run` / `mise x` for those checks.
-
-Package scripts require `mise` because AutoCorrect runs through the repo-managed
-toolchain. If you manage Node.js, pnpm, or uv yourself, still run `mise install`
-so the configured tools are available before running package scripts:
-
-```sh
-mise install
-pnpm install
-uv sync --locked
-```
-
-Rust is opt-in (see [Adding Workspace Members](#adding-workspace-members)). Once a toolchain
-is available, Cargo resolves Rust dependencies on the first build — there is no separate
-install step.
-
-## Commands
-
-Format files (Oxfmt + Prettier + Ruff + rustfmt + AutoCorrect):
-
-```sh
-pnpm run format
-```
-
-Run all lint checks (Oxlint + Oxfmt + Prettier, Ruff, rustfmt + Clippy, AutoCorrect):
-
-```sh
+pnpm test
 pnpm run lint
 ```
 
-Run lint checks for one ecosystem:
+Tests use temporary directories and mock package/service commands, so they never modify
+your desktop. For a local install before publication, run `/usr/bin/python install.py`
+from this checkout in a terminal.
 
-```sh
-pnpm run lint:js
-pnpm run lint:py
-pnpm run lint:rust
-pnpm run lint:text
-```
+Validate a clean plugin export with `omarchy plugin validate /path/to/export`. Do not
+validate a checkout containing `node_modules` or `.venv`: Omarchy rejects symlinks inside
+plugin directories. The published Git checkout does not contain those development files.
 
-The Rust steps are no-ops until the first crate exists, so `pnpm run lint` stays green on a
-fresh checkout before any Rust code is added.
-
-Run lint fixes and formatting:
-
-```sh
-pnpm run lint:fix
-```
-
-## Adding Workspace Members
-
-A TypeScript package:
-
-```sh
-mkdir -p packages/my-lib && cd packages/my-lib && pnpm init
-```
-
-Give it a `tsconfig.json` extending the root one. The root `pnpm run lint` already lints
-every workspace file with Oxlint (one root `.oxlintrc.json`, run once for the whole repo);
-add a nested `.oxlintrc.json` with `"extends": ["../../.oxlintrc.json"]` only when the
-member needs different rules, and `lint` / `lint:fix` scripts only for extra member-specific
-checks — `pnpm -r run --if-present lint` picks them up.
-
-A Python package:
-
-```sh
-uv init --package packages/my-tool && uv sync
-```
-
-`uv init` appends the member to `[tool.uv.workspace]` in the root `pyproject.toml`
-automatically; Ruff settings are inherited from the root, and all members share one
-lockfile and virtual environment.
-
-A Rust crate (first enable the opt-in toolchain by uncommenting the `rust` line in
-`mise.toml`, then `mise install`):
-
-```sh
-cargo new packages/my-crate        # use --lib for a library, default is a binary
-cargo generate-lockfile            # create Cargo.lock so the locked lint passes; commit it
-```
-
-`cargo new` appends the crate to `[workspace] members` in the root `Cargo.toml`
-automatically, and — because the root declares `[workspace.package]` — the generated
-`Cargo.toml` already inherits shared metadata via `edition.workspace = true` and
-`rust-version.workspace = true`. rustfmt and Clippy settings are inherited from the root too,
-and all members share one `Cargo.lock` and `target/` directory. `lint:rust` runs Clippy with
-`--locked`, so commit `Cargo.lock` (CI fails if it is missing or stale). Until the toolchain
-is enabled, the Rust lint/format steps stay no-ops and CI never installs Rust.
-
-## Git Hooks
-
-- `pre-commit` runs lint-staged: Oxlint + Oxfmt on staged JS/TS, Ruff on staged Python,
-  rustfmt on staged Rust, Prettier on staged docs/config files, plus AutoCorrect on all
-  staged files.
-- `pre-push` runs Git LFS, so `git-lfs` must be installed.
-
-The hooks need pnpm, uv, and AutoCorrect on PATH (plus rustfmt only when committing Rust).
-If a GUI Git client doesn't load your shell profile, provide them via husky's
-`~/.config/husky/init.sh`, e.g. `eval "$(mise activate bash --shims)"`.
-
-## Usage
-
-Start from this scaffold when you want a clean TypeScript + Python + Rust repository
-foundation without choosing an application framework up front. Keep the base small, add
-project-specific tools deliberately, and prefer extending the existing config over
-replacing it.
+For a real deployment smoke test without altering the desktop, copy the pinned Rime-ice
+runtime assets into a disposable directory with `prepare_rime`, run `rime_deployer --build`
+against `/usr/share/rime-data`, and inspect the compiled schema's candidate-page size.
