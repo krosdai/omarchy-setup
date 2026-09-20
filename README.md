@@ -4,6 +4,11 @@ An Omarchy shell plugin that installs **Fcitx5 + Rime-ice (雾凇拼音)** with 
 simplified Chinese by default, and **nine candidates per page**. It uses Omarchy's
 existing Fcitx5 service and leaves Caps Lock compose sequences unchanged.
 
+The repository also includes an independent, opt-in
+[automatic time-zone setup](timezone/README.md) using Wi-Fi positioning and public-IP
+fallback. Run `/usr/bin/python setup_timezone.py` from the checkout to review and
+enable it; the Chinese-input plugin never enables it automatically.
+
 ## Install
 
 Requires an up-to-date Arch-based Omarchy desktop with the `omarchy plugin` commands,
@@ -113,6 +118,84 @@ after testing it; users then update the plugin and run its installer manually.
 Reapplying the preset creates another backup and preserves personal data. An existing
 Git checkout in the Rime directory is saved in the backup, not carried into the managed
 runtime directory; do not use `git pull` there after adopting this plugin.
+
+## Optional Hyprland scrolling layout
+
+`presets/scrolling.lua` makes Hyprland's built-in scrolling layout the default.
+It is independent of Chinese-input setup and is **not applied automatically** when
+the plugin is enabled. It requires a Lua-configured Hyprland with scrolling support
+(tested on Omarchy with Hyprland 0.56.2); it is not a legacy `hyprland.conf` snippet.
+It leaves column widths, keybindings, appearance, and explicit workspace layouts alone.
+
+From this repository's checkout (or the installed plugin directory), run:
+
+```sh
+mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
+cp -i presets/scrolling.lua "${XDG_CONFIG_HOME:-$HOME/.config}/hypr/scrolling.lua"
+```
+
+Back up your `hypr/hyprland.lua`, then add this line **once at the end**, after
+Omarchy's defaults and your other overrides:
+
+```lua
+dofile((os.getenv("XDG_CONFIG_HOME") or os.getenv("HOME") .. "/.config") .. "/hypr/scrolling.lua")
+```
+
+The explicit path matches the copy destination, including custom `XDG_CONFIG_HOME`
+locations, without depending on Omarchy's Lua module search path.
+
+Apply and verify:
+
+```sh
+hyprctl reload
+hyprctl configerrors
+hyprctl getoption general:layout
+```
+
+The error list should be empty and the layout should read `scrolling`. Existing
+per-workspace layout choices still take precedence; the preset changes the default
+for workspaces without an override. To undo, remove the `dofile` line and reload;
+your previous default takes effect again. The copied preset remains independent of
+plugin updates or removal.
+
+## Optional traditional mouse scrolling
+
+`presets/mouse-scrolling.lua` explicitly disables natural (inverse) mouse scrolling:
+rolling the wheel toward you scrolls down. It leaves touchpad scrolling and all other
+input settings unchanged. This is independent of the scrolling window layout above
+and is **not applied automatically** by the Chinese-input plugin.
+
+This preset requires Lua-configured Hyprland, not a legacy `hyprland.conf`. From this
+repository's checkout (or the installed plugin directory), run:
+
+```sh
+mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
+cp -i presets/mouse-scrolling.lua "${XDG_CONFIG_HOME:-$HOME/.config}/hypr/mouse-scrolling.lua"
+```
+
+Back up your `hypr/hyprland.lua`, then add this line **once at the end**, after
+Omarchy's defaults and your other overrides:
+
+```lua
+dofile((os.getenv("XDG_CONFIG_HOME") or os.getenv("HOME") .. "/.config") .. "/hypr/mouse-scrolling.lua")
+```
+
+Apply and verify:
+
+```sh
+hyprctl reload
+hyprctl configerrors
+hyprctl getoption input:natural_scroll
+hyprctl getoption input:touchpad:natural_scroll
+```
+
+The error list should be empty, mouse `natural_scroll` should be `false`, and the
+touchpad value should be unchanged. Explicit per-device scrolling overrides still
+take precedence. If traditional scrolling was already the default, the direction
+will feel unchanged; the preset makes that preference explicit.
+
+To undo, remove the `dofile` line and reload; your previous mouse default takes effect
+again. The copied preset remains independent of plugin updates or removal.
 
 ## Development
 
