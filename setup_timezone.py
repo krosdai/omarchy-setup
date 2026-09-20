@@ -21,6 +21,22 @@ FILES = {
 SERVICE = "automatic-timezoned.service"
 AGENT = "geoclue-timezone-agent.service"
 SERVICES = ("geoclue.service", AGENT, SERVICE)
+SOURCES = ("setup_timezone.py", "install.py", *(f"timezone/{name}" for name in FILES))
+BOOTSTRAP = f"""
+import json, runpy, sys, tempfile
+from pathlib import Path
+
+sources = json.load(sys.stdin)
+with tempfile.TemporaryDirectory(prefix="omarchy-timezone-source-") as directory:
+    root = Path(directory)
+    for name in {SOURCES!r}:
+        target = root / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(sources[name])
+    sys.path.insert(0, str(root))
+    sys.argv = [str(root / "setup_timezone.py"), "--configure"]
+    runpy.run_path(sys.argv[0], run_name="__main__")
+"""
 
 
 def query(*args):
@@ -195,11 +211,20 @@ def main():
         if os.geteuid() != 0:
             raise RuntimeError("System configuration requires sudo.")
         with Path("/run/omarchy-timezone.lock").open("w") as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                print("Automatic time zone setup is already running.")
+                return
             apply(Path("/"))
         return
     if os.geteuid() == 0:
         raise RuntimeError("Run as your desktop user, not root or sudo.")
+    # Freeze the trusted checkout before consent/package installation. The root
+    # phase receives these bytes, never reopens the user's mutable checkout, and
+    # uses isolated Python with only the private staged directory added for imports.
+    source = Path(__file__).resolve().parent
+    sources = json.dumps({name: (source / name).read_text() for name in SOURCES})
     print(
         "Enable automatic time zone and network clock synchronization for this computer?\n"
         "Installs GeoClue from Arch and automatic-timezoned from the community AUR\n"
@@ -215,7 +240,7 @@ def main():
         return
     run("omarchy-pkg-add", "geoclue")
     run("omarchy-pkg-aur-add", "automatic-timezoned")
-    run("sudo", "/usr/bin/python", str(Path(__file__).resolve()), "--configure")
+    run("sudo", "/usr/bin/python", "-I", "-c", BOOTSTRAP, input=sources, text=True)
 
 
 if __name__ == "__main__":

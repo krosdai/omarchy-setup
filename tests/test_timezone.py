@@ -7,7 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import mock_open, patch
 
 import setup_timezone as timezone
 from install import run as real_run
@@ -310,11 +310,66 @@ class TimezoneTest(unittest.TestCase):
                     (
                         "sudo",
                         "/usr/bin/python",
-                        str(Path(timezone.__file__).resolve()),
-                        "--configure",
+                        "-I",
+                        "-c",
+                        timezone.BOOTSTRAP,
                     ),
                 ],
             )
+
+    def test_lock_contention_exits_without_configuration(self):
+        with (
+            patch("sys.argv", ["setup_timezone.py", "--configure"]),
+            patch.object(timezone.os, "geteuid", return_value=0),
+            patch.object(timezone.Path, "open", mock_open()),
+            patch.object(timezone.fcntl, "flock", side_effect=BlockingIOError),
+            patch.object(timezone, "apply") as apply,
+            patch("builtins.print") as output,
+        ):
+            timezone.main()
+        apply.assert_not_called()
+        output.assert_called_once_with("Automatic time zone setup is already running.")
+
+    def test_elevation_uses_source_snapshot_taken_before_consent(self):
+        with (
+            patch("sys.argv", ["setup_timezone.py"]),
+            patch.object(timezone.os, "geteuid", return_value=1000),
+            patch.object(timezone.Path, "read_text", return_value="trusted snapshot") as read,
+            patch("builtins.input") as answer,
+        ):
+
+            def consent(_prompt):
+                read.return_value = "changed after consent"
+                return "y"
+
+            answer.side_effect = consent
+            timezone.main()
+        payload = json.loads(self.mock_run.call_args.kwargs["input"])
+        self.assertEqual(payload, dict.fromkeys(timezone.SOURCES, "trusted snapshot"))
+
+    def test_bootstrap_uses_private_staging_and_isolated_imports(self):
+        payload = dict.fromkeys(timezone.SOURCES, "")
+        payload["install.py"] = "TOKEN = 'frozen'\n"
+        payload["setup_timezone.py"] = (
+            "import sys; from pathlib import Path; import install\n"
+            "assert sys.argv[1:] == ['--configure']\n"
+            "assert Path(__file__).parent.stat().st_mode & 0o077 == 0\n"
+            "assert install.TOKEN == 'frozen'\n"
+            "print(Path(__file__).parent)\n"
+        )
+        (self.root / "install.py").write_text("raise RuntimeError('untrusted import')\n")
+        result = real_run(
+            sys.executable,
+            "-I",
+            "-c",
+            timezone.BOOTSTRAP,
+            input=json.dumps(payload),
+            text=True,
+            capture_output=True,
+            cwd=self.root,
+            env={**timezone.os.environ, "PYTHONPATH": str(self.root)},
+        )
+        self.assertFalse(Path(result.stdout.strip()).exists())
 
 
 if __name__ == "__main__":

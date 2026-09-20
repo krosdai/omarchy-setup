@@ -23,6 +23,11 @@ Review the terminal prompt and answer `y`. Enabling the Chinese-input plugin doe
 **not** run this setup. No Node.js, pnpm, or Python development dependencies are
 needed. Keep `setup_timezone.py`, `install.py`, and `timezone/` together.
 
+Use a checkout you trust. Before confirmation, setup snapshots its Python sources
+and service assets in memory. The elevated phase uses those bytes in a private,
+root-owned temporary directory with isolated Python imports, rather than reopening
+checkout files that could change during package installation or the sudo prompt.
+
 Requires current Arch-based Omarchy, systemd, sudo, and working internet access.
 The installer uses `omarchy-pkg-add geoclue` and
 `omarchy-pkg-aur-add automatic-timezoned`. The latter builds a community-maintained
