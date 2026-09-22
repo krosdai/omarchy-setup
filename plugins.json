@@ -1,0 +1,44 @@
+[
+  {
+    "id": "omaplug",
+    "name": "Omaplug plugin manager",
+    "source": "external",
+    "repository": "https://github.com/fross100/omaplug.git"
+  },
+  {
+    "id": "krosdai.chinese-input",
+    "name": "Chinese input",
+    "source": "maintained",
+    "repository": "https://github.com/krosdai/omarchy-chinese-input.git"
+  },
+  {
+    "id": "krosdai.mac-touchpad",
+    "name": "Mac-style touchpad",
+    "source": "maintained",
+    "repository": "https://github.com/krosdai/omarchy-mac-touchpad.git"
+  },
+  {
+    "id": "krosdai.mouse-scrolling",
+    "name": "Traditional mouse scrolling",
+    "source": "maintained",
+    "repository": "https://github.com/krosdai/omarchy-mouse-scrolling.git"
+  },
+  {
+    "id": "io.github.manateelazycat.window-switcher",
+    "name": "Window and workspace switcher",
+    "source": "external",
+    "repository": "https://github.com/manateelazycat/omarchy-window-switcher.git"
+  },
+  {
+    "id": "crmne.hyprmoncfg",
+    "name": "Multi-monitor manager",
+    "source": "external",
+    "repository": "https://github.com/crmne/omarchy-hyprmoncfg.git"
+  },
+  {
+    "id": "krosdai.auto-timezone",
+    "name": "Automatic time zone",
+    "source": "maintained",
+    "repository": "https://github.com/krosdai/omarchy-auto-timezone.git"
+  }
+]

@@ -1,37 +1,33 @@
-# Omarchy Chinese Input Plugin
+# Omarchy setup index
 
-This repository packages a Chinese-input preset as the native Omarchy shell service
-plugin `krosdai.chinese-input`. It is not the upstream scaffold anymore; the scaffold's
-toolchain and formatting configuration remain in place.
+This repository recommends independently installable Omarchy plugins. It is no
+longer the `krosdai.chinese-input` plugin and must not ship a plugin manifest,
+launcher, installer or desktop preset.
 
 ## Ownership
 
-- `manifest.json`: root plugin manifest required by `omarchy plugin add`.
-- `Service.qml`: first-enable launcher, with no visual UI or replacement Fcitx5 daemon.
-- `install.py`: confirmed installation, pinned Rime-ice assets, configuration, backups,
-  rollback, and successful-install marker.
-- `tests/test_install.py`: isolated installer tests; system commands are mocked.
+- `README.md`: human installation order, optional choices, migration and safety notes.
+- `plugins.json`: maintained and external plugin inventory, in recommended order.
+- `tests/test_index.py`: portable inventory/documentation consistency checks.
+- Feature implementations and regression tests live in sibling repositories under
+  `~/repos/krosdai.omarchy-<feature>`; each must work without this index at runtime.
 
 ## Constraints
 
-Keep the plugin installable from a plain Git clone without development dependencies.
-Use the installed system Python at runtime and Omarchy's package helper for dependencies.
-Do not edit `/usr/share/omarchy`, introduce another Fcitx5 autostart, or reset user layouts,
-compose keys, personal dictionaries, or unrelated patches. Installation needs explicit
-confirmation in a terminal. Preserve backups and test failure paths before changing the
-installer. Never exercise installation tests against the developer's real home directory.
+Every listed feature is optional unless a real dependency is documented. Distinguish
+local unpublished sources from public Git URLs. Keep external repositories upstream;
+verify their actual install method and explain binding conflicts or privileged effects.
+Never run an installer or change the user's desktop to test documentation.
 
-Automatic dictionary updates are intentionally out of scope. Pin and test new upstream
-Rime-ice revisions deliberately; plugin updates do not silently reconfigure the desktop.
+Retain migration guidance for existing dictionaries, completion markers, backups,
+Lua snippets and time-zone services. Removing a setup launcher is not the same as
+undoing the system or user settings it installed.
 
 ## Verification
 
-Run `pnpm test` and `pnpm run lint` before declaring work done. Use `mise run setup` for
-development dependencies. Do not change linter/formatter settings without approval.
-Validate a clean export with `omarchy plugin validate`; `.venv` and `node_modules` contain
-symlinks that the plugin validator correctly refuses. QML startup can be checked in an
-isolated Quickshell process with a temporary `XDG_STATE_HOME` and a completed-install
-marker, so it cannot trigger a real installation.
+Use `mise run setup` for development dependencies, then run `pnpm test` and
+`pnpm run lint`. Preserve the existing linter and formatter configuration.
+Plugin manifest validation belongs in the individual plugin repositories, using
+clean exports when development directories contain symlinks.
 
-Keep the shared hygiene tools small. Follow Gitmoji + Conventional Commits when commits
-are requested. Do not publish or push without authorization.
+Do not publish, push or install plugins without authorization.
