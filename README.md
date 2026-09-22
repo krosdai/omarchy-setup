@@ -1,203 +1,236 @@
-# Omarchy Chinese Input
+# Omarchy setup index
 
-An Omarchy shell plugin that installs **Fcitx5 + Rime-ice (雾凇拼音)** with full Pinyin,
-simplified Chinese by default, and **nine candidates per page**. It uses Omarchy's
-existing Fcitx5 service and leaves Caps Lock compose sequences unchanged.
+Choose the desktop features you want, then install their independent plugins.
+**This repository is an index, not an installable plugin or an all-in-one installer.**
+Do not pass this repository to `omarchy plugin add`.
 
-The repository also includes an independent, opt-in
-[automatic time-zone setup](timezone/README.md) using Wi-Fi positioning and public-IP
-fallback. Run `/usr/bin/python setup_timezone.py` from the checkout to review and
-enable it; the Chinese-input plugin never enables it automatically.
+The four maintained plugins live in separate public repositories under
+[krosdai](https://github.com/krosdai). Each repository contains its own
+installation, verification, backup, and removal instructions.
 
-## Install
+## Pick only the features you need
 
-Requires an up-to-date Arch-based Omarchy desktop with the `omarchy plugin` commands,
-Python 3, and an active `omarchy-fcitx5.service`. Run as your desktop user, not root.
-Internet access to the Arch package mirrors and GitHub is required.
+The order below is a suggested setup sequence, **not a dependency chain**. None of
+these plugins requires another plugin in this list. Skip any row you do not want.
+The machine-readable inventory is [plugins.json](plugins.json).
 
-Once this plugin has been published to the repository's default branch:
+| Order | Feature and when to choose it                                                        | Repository                                                                                          | Plugin ID                                  |
+| ----- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| 0     | Optional graphical plugin manager: install, enable, update and remove plugins        | [fross100/omaplug](https://github.com/fross100/omaplug)                                             | `omaplug`                                  |
+| 1     | Chinese input: full Pinyin with Rime-ice and nine candidates                         | [krosdai/omarchy-chinese-input](https://github.com/krosdai/omarchy-chinese-input)                   | `krosdai.chinese-input`                    |
+| 2     | Mac-style touchpad: natural scrolling, two-finger right-click, no tap-and-drag       | [krosdai/omarchy-mac-touchpad](https://github.com/krosdai/omarchy-mac-touchpad)                     | `krosdai.mac-touchpad`                     |
+| 3     | Traditional mouse wheel: wheel toward you scrolls down; touchpad unchanged           | [krosdai/omarchy-mouse-scrolling](https://github.com/krosdai/omarchy-mouse-scrolling)               | `krosdai.mouse-scrolling`                  |
+| 4     | Window/workspace switcher: visual Alt+Tab and Super+Tab, community plugin            | [manateelazycat/omarchy-window-switcher](https://github.com/manateelazycat/omarchy-window-switcher) | `io.github.manateelazycat.window-switcher` |
+| 5     | Multi-monitor manager: saved display profiles and automatic hotplug/lid switching    | [crmne/omarchy-hyprmoncfg](https://github.com/crmne/omarchy-hyprmoncfg)                             | `crmne.hyprmoncfg`                         |
+| 6     | Automatic time zone: useful for travel; system-wide, with location-provider requests | [krosdai/omarchy-auto-timezone](https://github.com/krosdai/omarchy-auto-timezone)                   | `krosdai.auto-timezone`                    |
 
-```sh
-omarchy plugin add https://github.com/krosdai/omarchy-setup.git --enable
-```
+For a laptop, start with the touchpad plugin and add Chinese input if needed. Add
+mouse scrolling only if you use a wheel mouse and want that preference explicit;
+it may already match your default. The window switcher does not require changing
+your window layout. Automatic time zone is last so you can
+review its system changes and privacy implications separately.
 
-Omarchy asks whether you trust the plugin. On first enable, the plugin opens an
-installation terminal. Review the changes and answer `y`; enter your sudo password
-if the package installer asks for it. No application build or development tools are
-needed on the recipient's machine.
+## Optional first step: Omaplug plugin manager
 
-Adding a plugin does not run an install hook: Omarchy has no such hook. This plugin's
-headless QML service opens the installer when enabled. After a successful installation,
-it does nothing on subsequent logins or hot reloads. Cancelling or failing leaves setup
-available on the next enable/login, or you can run it manually:
-
-```sh
-/usr/bin/python ~/.config/omarchy/plugins/krosdai.chinese-input/install.py
-```
-
-## What gets configured
-
-- Packages: `fcitx5-rime`, `fcitx5-configtool`, `python-yaml`, and `git` through
-  `omarchy-pkg-add`; `librime` is installed as a dependency.
-- Rime-ice runtime assets from the official repository, pinned to the revision in
-  `install.py`. It does not run upstream installation scripts.
-- The Rime scheme menu selects `rime_ice` (full Pinyin). Other installed schemes stay
-  on disk. The upstream scheme defaults to simplified Chinese; existing user choices
-  such as traditional-character mode are not forcibly reset.
-- `menu/page_size: 9` in both `default.custom.yaml` and `rime_ice.custom.yaml`.
-- Rime is added once to the first group in Fcitx5's group order and becomes that group's
-  default non-keyboard input method. Existing keyboard layouts, other input methods,
-  groups, and global shortcuts are preserved. A fresh profile gets US English + Rime.
-
-Fcitx5 stops during deployment to prevent concurrent writes to your personal dictionary.
-Finish any pending composition before approving installation. Source downloads happen
-before the service stops.
-
-## Use
-
-| Key                         | Action                                                              |
-| --------------------------- | ------------------------------------------------------------------- |
-| `Ctrl+Space`                | Switch between keyboard input and Rime, with stock Fcitx5 shortcuts |
-| `Space`                     | Select the first candidate                                          |
-| `1`–`9`                     | Select a numbered candidate                                         |
-| `F4`                        | Open Rime options, including simplified/traditional Chinese         |
-| Caps Lock compose sequences | Keep working through Omarchy's existing configuration               |
-
-Run `fcitx5-configtool` for input-method settings. Custom global shortcuts are not
-replaced; use your existing shortcut if it differs from `Ctrl+Space`.
-
-## Existing data, backups, and removal
-
-The installer keeps personal dictionaries (`*.userdb`), sync data, existing
-`custom_phrase.txt`, cold-word suppression lists (`drop_words.lua`, `hide_words.lua`,
-and `reduce_freq_words.lua`), and unrelated YAML patch settings. It replaces the upstream
-runtime assets, the scheme menu, and candidate-page size. Direct edits to upstream
-dictionaries or Lua files should be moved to custom patches before installation.
-YAML/profile serialization can change formatting and remove comments; original files
-remain in the backup. Symlinked Rime data or profiles are refused rather than followed.
-
-After Fcitx5 stops and flushes its configuration, the installer backs up the Rime directory
-and profile. Deployment failure or cancellation with Ctrl+C, SIGHUP, or SIGTERM stops the
-deployment child before restoring configuration and restarting Fcitx5. Repeated cancellation
-signals do not interrupt recovery. SIGKILL and power loss cannot be handled this way.
-
-If recovery itself fails, the installer keeps the backup and working directory, reports
-both errors and their paths, and requires manual recovery. In particular, it will not replace
-potentially live data if it cannot stop Fcitx5. System packages installed before a failure
-remain installed; they are not rolled back.
-
-Default locations (standard `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, and `XDG_STATE_HOME`
-overrides are honored):
-
-```text
-~/.config/fcitx5/profile
-~/.local/share/fcitx5/rime/
-~/.local/state/omarchy-chinese-input/installed.json
-~/.local/state/omarchy-chinese-input/backup-*/
-```
-
-`installed.json` records the source revision and latest successful backup location.
-To restore manually, stop `omarchy-fcitx5.service`, move the current Rime directory and
-profile aside, copy the saved `rime/` and `profile` back when present, and start the
-service. An absent backup item means it did not exist before installation. Keep newer
-personal dictionary data if you want to retain learning since the backup.
+[Omaplug](https://github.com/fross100/omaplug) is a community-maintained graphical
+manager for Omarchy 4.x plugins. Install it first if you prefer managing plugins
+from the bar rather than the CLI:
 
 ```sh
-omarchy plugin remove krosdai.chinese-input
+omarchy plugin add https://github.com/fross100/omaplug.git --enable
 ```
 
-Removing or disabling the plugin does **not** uninstall packages, remove Rime, or erase
-your dictionary. It only removes/disables the setup launcher. The completion marker also
-remains; after re-adding the plugin, run the installer manually to reapply the preset.
+Click the Plugin Manager icon on the bar to open it. It supports plugin installation,
+enable/disable toggles, update checks, updates, removal and bar arrangement. Other
+plugins do not depend on it, and the CLI instructions below remain valid. Review
+plugin trust and update-verification status before installing or updating code.
+Updates are separate from automatic update checks; do not bulk-update plugins
+without reviewing their changes.
 
-## Updates
+The Apps-menu shortcut is off by default and can be enabled in Omaplug's settings.
+Before removing Omaplug, turn off that shortcut if enabled and remove any keyboard
+shortcuts you assigned through it. Use `omarchy plugin remove omaplug` to uninstall.
 
-There are **no automatic dictionary updates**. `omarchy plugin update` updates this
-plugin, not the installed Rime-ice data. A maintainer can change the pinned revision
-after testing it; users then update the plugin and run its installer manually.
-Reapplying the preset creates another backup and preserves personal data. An existing
-Git checkout in the Rime directory is saved in the backup, not carried into the managed
-runtime directory; do not use `git pull` there after adopting this plugin.
+## Install one plugin at a time
 
-## Optional Hyprland scrolling layout
+Use a current Arch-based Omarchy desktop with native `omarchy plugin` support,
+Quickshell and system Python. The desktop presets target Lua-based Hyprland
+configuration, tested with Hyprland 0.56.2; they are not legacy `.conf` snippets.
+Run as your normal desktop user. Plugins execute trusted code as that user; review
+each repository and leave Omarchy's trust confirmation enabled.
 
-`presets/scrolling.lua` makes Hyprland's built-in scrolling layout the default.
-It is independent of Chinese-input setup and is **not applied automatically** when
-the plugin is enabled. It requires a Lua-configured Hyprland with scrolling support
-(tested on Omarchy with Hyprland 0.56.2); it is not a legacy `hyprland.conf` snippet.
-It leaves column widths, keybindings, appearance, and explicit workspace layouts alone.
-
-From this repository's checkout (or the installed plugin directory), run:
+For each plugin you chose, read its README, then run **only its command**:
 
 ```sh
-mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
-cp -i presets/scrolling.lua "${XDG_CONFIG_HOME:-$HOME/.config}/hypr/scrolling.lua"
+omarchy plugin add https://github.com/krosdai/omarchy-chinese-input.git --enable
+omarchy plugin add https://github.com/krosdai/omarchy-mac-touchpad.git --enable
+omarchy plugin add https://github.com/krosdai/omarchy-mouse-scrolling.git --enable
+omarchy plugin add https://github.com/krosdai/omarchy-auto-timezone.git --enable
 ```
 
-Back up your `hypr/hyprland.lua`, then add this line **once at the end**, after
-Omarchy's defaults and your other overrides:
+Omarchy clones the public repository, validates its manifest,
+and enables its launcher. Development environments such as `.venv` are not included
+in that clone. No development toolchain is needed to install the plugin.
 
-```lua
-dofile((os.getenv("XDG_CONFIG_HOME") or os.getenv("HOME") .. "/.config") .. "/hypr/scrolling.lua")
-```
+Each maintained plugin opens a terminal for a separate first-run confirmation.
+Approve, finish setup, and check the result before enabling the next one. Chinese
+input installs packages and briefly stops Fcitx5. Automatic time zone installs
+GeoClue and an AUR package, requires sudo, enables system services and NTP, and may
+immediately change the machine's time zone. The two desktop presets only change
+their own settings in your personal Hyprland configuration.
 
-The explicit path matches the copy destination, including custom `XDG_CONFIG_HOME`
-locations, without depending on Omarchy's Lua module search path.
+Do not blindly approve automatic time zone: Wi-Fi identifiers are sent to BeaconDB,
+and public-IP positioning uses ReallyFreeGeoIP. VPN exit locations can produce an
+incorrect time zone. Read that repository's privacy and recovery sections first.
 
-Apply and verify:
+## Optional external window switcher
+
+[Omarchy Window Switcher](https://github.com/manateelazycat/omarchy-window-switcher)
+is maintained by ManateeLazyCat, not this project or the Omarchy maintainers. The
+upstream version reviewed for this guide supports Omarchy Quattro/4's native
+plugin mechanism and Lua-based Hyprland bindings:
 
 ```sh
-hyprctl reload
+omarchy plugin add https://github.com/manateelazycat/omarchy-window-switcher.git --enable
+```
+
+It provides `Alt+Tab` for windows and `Super+Tab` for workspaces; adding Shift cycles
+backward. It also replaces the built-in workspace bar component. Disable standalone
+Orbit or Overview Workspaces installations first to avoid duplicate widgets and
+shortcuts. Custom bindings on these keys can be displaced; default system ordering
+keeps `Super+1` through `Super+0`, while optional legacy ordering can take them over.
+No extra `dofile()` or manual keybinding fragment is needed.
+
+For updates, follow upstream's current README. At the reviewed revision:
+
+```sh
+omarchy plugin update io.github.manateelazycat.window-switcher
+omarchy restart shell
+```
+
+To remove it:
+
+```sh
+omarchy plugin remove io.github.manateelazycat.window-switcher
+```
+
+Removal restores stock bindings rather than arbitrary previous custom bindings;
+review your personal shortcuts afterward. This index links to upstream rather than
+vendoring its code. Reviewed source:
+[README](https://github.com/manateelazycat/omarchy-window-switcher/blob/bfce7dfbdd6502a71c865008843d3c04d9c6ac5b/README.md)
+and [keybinding service](https://github.com/manateelazycat/omarchy-window-switcher/blob/bfce7dfbdd6502a71c865008843d3c04d9c6ac5b/overview/KeybindingService.qml).
+
+## Optional external multi-monitor manager
+
+[hyprmoncfg for Omarchy](https://github.com/crmne/omarchy-hyprmoncfg) is Carmine
+Paolino's community-maintained bar panel for visual display arrangement, scale,
+resolution, brightness, saved profiles and workspace planning. Its backend can
+automatically select profiles on monitor hotplug, lid changes and resume. It manages
+display outputs, not Hyprland's window tiling layout.
+
+```sh
+omarchy plugin add https://github.com/crmne/omarchy-hyprmoncfg.git --enable
+```
+
+**The panel and the backend are separate installations.** The reviewed panel version
+2.3.5 requires Omarchy Quattro and `hyprmoncfg` 1.18.3 or newer. If the backend is
+missing, open the bar panel and choose **Install hyprmoncfg**. Review the AUR package
+and sudo prompt in the terminal: a fresh installation uses `hyprmoncfg-bin`, while
+existing installations keep their binary/source package choice. The installation
+flow enables and restarts the user service `hyprmoncfgd.service` and opens the editor.
+Save suitable profiles before relying on automatic switching. Review and confirm
+display changes while the preview is visible; unconfirmed previews revert.
+
+Check backend availability separately from plugin enablement:
+
+```sh
+hyprmoncfg --version
+systemctl --user status hyprmoncfgd.service
+journalctl --user -u hyprmoncfgd.service -n 40 --no-pager
+hyprctl monitors
 hyprctl configerrors
-hyprctl getoption general:layout
 ```
 
-The error list should be empty and the layout should read `scrolling`. Existing
-per-workspace layout choices still take precedence; the preset changes the default
-for workspaces without an override. To undo, remove the `dofile` line and reload;
-your previous default takes effect again. The copied preset remains independent of
-plugin updates or removal.
+An enabled bar plugin does not prove the backend is installed or managing displays.
+Do not let multiple tools compete to apply display profiles. Panel updates and
+backend package upgrades are separate; after a backend upgrade, the panel may offer
+**Restart daemon** to load the new binary.
 
-## Optional traditional mouse scrolling
-
-`presets/mouse-scrolling.lua` explicitly disables natural (inverse) mouse scrolling:
-rolling the wheel toward you scrolls down. It leaves touchpad scrolling and all other
-input settings unchanged. This is independent of the scrolling window layout above
-and is **not applied automatically** by the Chinese-input plugin.
-
-This preset requires Lua-configured Hyprland, not a legacy `hyprland.conf`. From this
-repository's checkout (or the installed plugin directory), run:
+To hand display management back to Omarchy before removing the panel:
 
 ```sh
-mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
-cp -i presets/mouse-scrolling.lua "${XDG_CONFIG_HOME:-$HOME/.config}/hypr/mouse-scrolling.lua"
+hyprmoncfg unmanage
+omarchy plugin remove crmne.hyprmoncfg
 ```
 
-Back up your `hypr/hyprland.lua`, then add this line **once at the end**, after
-Omarchy's defaults and your other overrides:
+`unmanage` removes the managed Hyprland include, restores Omarchy's monitor watcher
+and reloads Hyprland. The backend remains running but persists its unmanaged state;
+removing the panel alone does not release display management. If the backend was
+never installed, only remove the panel. Saved profiles remain under
+`~/.config/hyprmoncfg/profiles`. Consult upstream's README for complete package removal.
 
-```lua
-dofile((os.getenv("XDG_CONFIG_HOME") or os.getenv("HOME") .. "/.config") .. "/hypr/mouse-scrolling.lua")
-```
+## Migrate from the old all-in-one repository
 
-Apply and verify:
+Nothing in this split changes an existing desktop automatically. Preserve your
+configuration, dictionaries, completion markers and backups.
+
+- **Chinese input:** the plugin keeps ID `krosdai.chinese-input`. Replace the old
+  checkout with the new source; do not enable a second launcher with another ID:
+
+  ```sh
+  omarchy plugin remove krosdai.chinese-input
+  omarchy plugin add https://github.com/krosdai/omarchy-chinese-input.git --enable
+  ```
+
+  Plugin removal does not erase Rime data. The existing successful-install marker
+  prevents an unnecessary reinstall. Existing shortcuts and learned words remain.
+  Stop updating the old `omarchy-setup` plugin source: this repository no longer
+  contains an installable manifest.
+
+- **Automatic time zone:** existing system services and `/var/lib/omarchy-timezone`
+  backups remain valid. Adding the new plugin asks you to approve one idempotent
+  re-run, which reuses identical system files and records a new per-user completion
+  marker. It can restart services and change the time zone; migration is optional.
+
+- **Mouse scrolling:** previously copied Lua snippets continue working. You do not
+  need to replace them. If adopting the new managed-block installer, leave working
+  snippets in place until verification succeeds; later
+  remove only obsolete references if you want a single configuration owner.
+
+- **Mac-style touchpad:** existing personal overrides continue working. Installing
+  the independent plugin does not delete those overrides. Uninstalling its managed
+  block reveals the remaining personal settings, which may give the same behavior.
+
+## Verify and undo deliberately
+
+After each desktop preset, check `hyprctl configerrors` and its relevant setting:
 
 ```sh
-hyprctl reload
-hyprctl configerrors
-hyprctl getoption input:natural_scroll
-hyprctl getoption input:touchpad:natural_scroll
+hyprctl getoption input:touchpad:natural_scroll       # true for Mac-style touchpad
+hyprctl getoption input:touchpad:clickfinger_behavior # true
+hyprctl getoption input:touchpad:tap-and-drag          # false
+hyprctl getoption input:natural_scroll                # false for mouse scrolling
 ```
 
-The error list should be empty, mouse `natural_scroll` should be `false`, and the
-touchpad value should be unchanged. Explicit per-device scrolling overrides still
-take precedence. If traditional scrolling was already the default, the direction
-will feel unchanged; the preset makes that preference explicit.
+For Chinese input, use `fcitx5-configtool` and try composition in an editor. For
+automatic time zone, inspect `timedatectl status` and the service journal; an active
+service alone does not prove a location was obtained.
 
-To undo, remove the `dofile` line and reload; your previous mouse default takes effect
-again. The copied preset remains independent of plugin updates or removal.
+For the maintained setup plugins, `omarchy plugin disable ID` stops the launcher;
+it does **not** undo installed settings, stop the time-zone service or uninstall
+packages. The two desktop presets provide `install.py --uninstall`; disable the
+launcher before using it. Chinese input and automatic time zone document their
+own data-preserving recovery/removal procedures. Keep backups until satisfied.
+Plugin updates do not silently reapply any of these presets.
 
-## Development
+## Maintain the index
+
+Feature code and feature tests belong in the individual repositories, not here.
+Update `plugins.json` and this guide together when adding a recommendation. Give
+external plugins their actual installation method and disclose conflicts; do not
+invent unpublished remote URLs or make optional plugins mandatory.
+
+This repository retains its existing development toolchain and lint policy:
 
 ```sh
 mise run setup
@@ -205,14 +238,6 @@ pnpm test
 pnpm run lint
 ```
 
-Tests use temporary directories and mock package/service commands, so they never modify
-your desktop. For a local install before publication, run `/usr/bin/python install.py`
-from this checkout in a terminal.
-
-Validate a clean plugin export with `omarchy plugin validate /path/to/export`. Do not
-validate a checkout containing `node_modules` or `.venv`: Omarchy rejects symlinks inside
-plugin directories. The published Git checkout does not contain those development files.
-
-For a real deployment smoke test without altering the desktop, copy the pinned Rime-ice
-runtime assets into a disposable directory with `prepare_rime`, run `rime_deployer --build`
-against `/usr/share/rime-data`, and inspect the compiled schema's candidate-page size.
+Index tests check inventory consistency and ensure this repository cannot still be
+mistaken for an installable plugin. Run each plugin's own tests before releasing
+changes there.
